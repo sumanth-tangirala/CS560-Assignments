@@ -1,0 +1,4 @@
+numpy~=1.25.2
+pyquaternion~=0.9.9
+setuptools~=65.5.1
+visualizer~=0.1
