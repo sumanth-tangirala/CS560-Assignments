@@ -1,0 +1,7 @@
+.idea
+.vscode
+.uuid
+__pycache__
+*/__pycache__/*
+*/visualizer/out/*
+.autoenv.zsh

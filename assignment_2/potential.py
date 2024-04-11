@@ -8,6 +8,7 @@ from utils.visualization_utils import visualize_arm_trajectory, visualize_obstac
 
 from visualizer.visualization.threejs_group import *
 
+
 ATTRACTION_CONSTANT = 0.1
 REPLUSION_CONSTANT  = 0.01
 
@@ -40,7 +41,7 @@ def compute_repulsion_gradient(config, obstacle):
     if minimum_obstacle_distance > INFLUENCE_DIST:
         return 0
     
-    return REPLUSION_CONSTANT * ((1/INFLUENCE_DIST) - (1/minimum_obstacle_distance))/(minimum_obstacle_distance**2)
+    return REPLUSION_CONSTANT * ((1/minimum_obstacle_distance) - (1/INFLUENCE_DIST))/(minimum_obstacle_distance**2)
 
 
 def perform_potential_planning(start, goal, obstacle):
@@ -52,7 +53,7 @@ def perform_potential_planning(start, goal, obstacle):
     while True:
         attr_grad = compute_attraction_gradient(current, goal)
         repl_grad = compute_repulsion_gradient(current, obstacle)
-        gradient = attr_grad + repl_grad
+        gradient = attr_grad - repl_grad
 
         print(current, attr_grad, repl_grad)
         current -= gradient

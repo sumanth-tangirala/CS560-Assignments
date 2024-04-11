@@ -1,0 +1,6 @@
+pyquaternion~=0.9.9
+visualizer~=0.1
+setuptools~=65.5.1
+numpy~=1.25.2
+tqdm~=4.66.2
+scipy~=1.9.3

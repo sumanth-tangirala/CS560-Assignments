@@ -67,7 +67,7 @@ def is_arm_colliding(graph_node: GraphNode=None, obstacle=None, config=None):
 
 def is_node_in_collision(graph_node: GraphNode, obstacles, is_arm: bool):
     collision_check_func = is_arm_colliding if is_arm else is_vehicle_colliding
-    for obstacle in obstacles:
+    for i, obstacle in enumerate(obstacles):
         if collision_check_func(graph_node, obstacle):
             return True
 

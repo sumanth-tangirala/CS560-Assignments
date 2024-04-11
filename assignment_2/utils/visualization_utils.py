@@ -18,8 +18,11 @@ def visualize_obstacles(obstacles, viz_out):
         viz_out.add_obstacle(geom, green)
 
 
-def visualize_arm_config(config, viz_out, name_prefix=""):
+def visualize_arm_config(config, viz_out, name_prefix="", colors=None):
     link_positions, link_quats = compute_link_configurations(config)
+
+    if colors is None:
+        colors = [orange, yellow, purple]
 
     link1 = box_geom(
         name=name_prefix + "link1",
@@ -48,12 +51,12 @@ def visualize_arm_config(config, viz_out, name_prefix=""):
         quaternion=link_quats[2]
     )
 
-    viz_out.add_obstacle(link1, orange)
-    viz_out.add_obstacle(link2, yellow)
-    viz_out.add_obstacle(link3, purple)
+    viz_out.add_obstacle(link1, colors[0])
+    viz_out.add_obstacle(link2, colors[1])
+    viz_out.add_obstacle(link3, colors[2])
 
 
-def visualize_vehicle(config, viz_out, name="vehicle"):
+def visualize_vehicle(config, viz_out, name="vehicle", color=blue):
     vehicle = box_geom(
         name=name,
         width=VEHICLE_SIZE[0],
@@ -63,16 +66,31 @@ def visualize_vehicle(config, viz_out, name="vehicle"):
         quaternion=config[3:]
     )
 
-    viz_out.add_obstacle(vehicle, blue)
+    viz_out.add_obstacle(vehicle, color)
 
 
 def visualize_graph(graph, is_arm, viz_out):
+    visualized_lines = dict()
+
     if is_arm:
         for i, node in enumerate(graph):
-            visualize_arm_config(node.config, viz_out, name_prefix=f"arm{i}_")
+            end_point = node.end_point
+            radius = 0.5
+
+            geom = sphere_geom(f"node_{i}", radius, end_point, blue)
+            viz_out.add_obstacle(geom, green)
+
+            for neighbor in node.adjacent:
+                if (node, neighbor) in visualized_lines:
+                    continue
+
+                line = [node.end_point, neighbor.end_point]
+                viz_out.add_line(line, red)
+
+                visualized_lines[(node, neighbor)] = True
+                visualized_lines[(neighbor, node)] = True
 
     else:
-        visualized_lines = dict()
         for i, node in enumerate(graph):
             visualize_vehicle(node.config, viz_out, name=f"vehicle_{i}")
             for neighbor in node.adjacent:

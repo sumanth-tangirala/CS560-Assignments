@@ -5,6 +5,8 @@ from utils.graphNode import sanitize_angles
 from utils import compute_arm_distance, compute_vehicle_distance, read_configs_file
 from utils.visualization_utils import visualize_arm_config, visualize_vehicle
 
+from constants import green, yellow, red, blue, orange, purple, grey
+
 from visualizer.visualization.threejs_group import *
 
 
@@ -29,17 +31,26 @@ def compute_nearest_neighbors(target, configs, k, is_arm):
 
     return knn
 
-
-def visualize_nearest_neighbors(target, nearest_neighbors, is_arm):
+def visualize_nearest_neighbors(target, nn_indices, configs, is_arm):
+    nn_indices = set(nn_indices)
     viz_out = threejs_group(js_dir="../../js")
-    for i, config in enumerate([target, *nearest_neighbors]):
-        name = f"{'arm' if is_arm else 'vehicle'}_" + ("target" if i == 0 else f"neighbor_{i}")
-        if is_arm:
-            visualize_arm_config(config, viz_out)
+    for i, config in enumerate([*configs, target]):
+        if i == len(configs):
+            color = green
+        elif i in nn_indices:
+            color = yellow
         else:
-            visualize_vehicle(config, viz_out)
+            color = red
 
-        viz_out.to_html(f"./visualizer/out/knn/{name}.html")
+        name = f"{'arm' if is_arm else 'vehicle'}_" + ("target" if i == len(configs) else f"neighbor_{i}")
+        if is_arm:
+            colors = [color, color, color]
+            visualize_arm_config(config, viz_out, colors=colors, name_prefix=name)
+        else:
+            visualize_vehicle(config, viz_out, color=color, name=name)
+
+    file_name = 'arm' if is_arm else 'vehicle'
+    viz_out.to_html(f"./visualizer/out/knn/{file_name}.html")
 
 
 def main():
@@ -72,9 +83,11 @@ def main():
     nearest_neighbors_indices = compute_nearest_neighbors(parsed_args.target, loaded_configs, parsed_args.k,
                                                   parsed_args.robot == 'arm')
 
-    nearest_neighbors = [loaded_configs[idx] for idx in nearest_neighbors_indices]
+    visualize_nearest_neighbors(parsed_args.target, nearest_neighbors_indices, loaded_configs, parsed_args.robot == 'arm')
 
-    visualize_nearest_neighbors(parsed_args.target, nearest_neighbors, parsed_args.robot == 'arm')
+    print(f"Target: {parsed_args.target}")
+    for i, idx in enumerate(nearest_neighbors_indices):
+        print(f"Neighbor {i}: {loaded_configs[idx]}")
 
 
 if __name__ == "__main__":

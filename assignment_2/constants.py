@@ -22,7 +22,7 @@ ARM_LINK_SIZES = [
 ALPHA = 0.7
 
 # PRM
-NUM_PRM_NODES = 200
+NUM_PRM_NODES = 5000
 NUM_PRM_NEIGHBORS = 6
 
 # Collision Checking Params

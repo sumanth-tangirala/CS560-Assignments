@@ -1,12 +1,13 @@
 import argparse
+import time
 
 import tqdm
 
 from constants import NUM_PRM_NODES, NUM_PRM_NEIGHBORS
 from nearest_neighbors import compute_nearest_neighbors
-from utils import read_configs_file, GraphNode, a_star
+from utils import parallel_run, read_configs_file, GraphNode, a_star
 from utils.collision_checking_utils import is_node_in_collision, is_edge_in_collision
-from utils.visualization_utils import visualize_graph, visualize_obstacles, visualize_path
+from utils.visualization_utils import visualize_arm_config, visualize_graph, visualize_obstacles, visualize_path
 
 from visualizer.visualization.threejs_group import *
 
@@ -20,15 +21,19 @@ class PRM:
         self.obstacle_map = obstacle_map
         self.is_arm = is_arm
         self.graph = []
+        self.path = None
 
         self.start_node = self.add_node(config=start)
         self.goal_node = self.add_node(config=goal)
 
         if self.start_node is None:
-            raise ValueError('Start node is in collision')
+            self.visualize_only_obstacles(config=start)
+            print('VISUALIZING')
+            raise ValueError(f'Start node: {start} is in collision with {self.obstacle_map[self.start_node.collision_idx]}')
         
         if self.goal_node is None:
-            raise ValueError('Goal node is in collision')
+            self.visualize_only_obstacles(config=goal)
+            raise ValueError(f'Goal node: {goal} is in collision')
     
     def __len__(self) -> int:
         return len(self.graph)
@@ -79,7 +84,10 @@ class PRM:
                     self._add_graph_edge(node1, node2)
 
     def find_path(self):
-        self.path = a_star(self.start_node, self.goal_node)
+        result = a_star(self.start_node, self.goal_node, return_cost=True)
+
+        if result is not None:
+            self.path, self.path_cost = result
 
     def run(self):
         print('Adding nodes...')
@@ -91,11 +99,19 @@ class PRM:
         print('Finding path from start to goal...')
         self.find_path()
 
+    def visualize_only_obstacles(self, config=None):
+        viz_out = threejs_group(js_dir="../../js")
+
+        if config is not None:
+            visualize_arm_config(config, viz_out)
+
+        visualize_obstacles(self.obstacle_map, viz_out)
+        viz_out.to_html(f"./visualizer/out/{self.visualization_directory}/obstacles.html")
+
     def visualize_graph(self):
         robot = "arm" if self.is_arm else "vehicle"
 
         viz_out = threejs_group(js_dir="../../js")
-
         visualize_graph(self.graph, self.is_arm, viz_out)
         visualize_obstacles(self.obstacle_map, viz_out)
 
@@ -117,7 +133,30 @@ class PRM:
         viz_out.to_html(f"./visualizer/out/{self.visualization_directory}/path_{robot}.html")
 
 
-def main():
+def main(args):
+    map_file, start, goal, robot = args.map, args.start, args.goal, args.robot
+    
+    obstacle_map = read_configs_file(map_file)
+    start = np.array([float(x) for x in start])
+    goal = np.array([float(x) for x in goal])
+
+    start_time = time.time()
+    prm = PRM(start, goal, obstacle_map, is_arm=robot == 'arm')
+
+    prm.run()
+
+    end_time = time.time()
+
+    prm.visualize_graph()
+
+    prm.visualize_path()
+
+    if prm.path:
+        return True, end_time - start_time, prm.path_cost
+    else:
+        return False, end_time - start_time, 0
+
+if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--robot', type=str, required=True, choices=['arm', 'vehicle'])
     arg_parser.add_argument('--map', type=str, required=True)
@@ -140,17 +179,4 @@ def main():
         if len(parsed_args.goal) != 7:
             raise ValueError('Goal state for vehicle should have 7 values')
 
-    obstacle_map = read_configs_file(parsed_args.map)
-    start = np.array([float(x) for x in parsed_args.start])
-    goal = np.array([float(x) for x in parsed_args.goal])
-
-    prm = PRM(start, goal, obstacle_map, is_arm=parsed_args.robot == 'arm')
-
-    prm.run()
-
-    prm.visualize_graph()
-
-    prm.visualize_path()
-
-if __name__ == '__main__':
-    main()
+    main(parsed_args)

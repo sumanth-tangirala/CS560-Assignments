@@ -11,10 +11,11 @@ class GraphNode:
         self.neighbors = list()
         self.safe_neighbors = set()
         self._is_arm = is_arm
+        self.collision_idx = None
+
         if not random:
             if config is None:
                 raise ValueError("Config must be provided if random is False")
-
             if is_arm:
                 # Sanitize the angles to be in the range [-pi, pi]
                 self.config = sanitize_angles(config)
@@ -24,7 +25,7 @@ class GraphNode:
 
         if random:
             if is_arm:
-                self.config = np.random.uniform([-np.pi, -np.pi/2, -np.pi], [np.pi, np.pi/2, np.pi], 3)
+                self.config = np.random.uniform([-np.pi, -np.pi, -np.pi], [np.pi, np.pi, np.pi], 3)
             else:
                 self.config = np.array([
                     *np.random.uniform(lower_space_limits, upper_space_limits, 3),
@@ -33,7 +34,7 @@ class GraphNode:
 
         if is_arm:
             from utils import compute_link_configurations
-            self.link_positions, self.link_orientations = compute_link_configurations(self.config)
+            self.link_positions, self.link_orientations, self.end_point = compute_link_configurations(self.config, return_end_point=True)
         else:
             self.position = self.config[:3]
             self.orientation = Quaternion(self.config[3:])

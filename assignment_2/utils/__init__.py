@@ -1,5 +1,7 @@
 from itertools import count
 from math import ceil
+from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
 from queue import PriorityQueue
 
 import numpy as np
@@ -23,7 +25,7 @@ def closest_point_on_cuboid_to_sphere(cuboid_center, cuboid_orientation, cuboid_
     return closest_point_world
 
 
-def compute_link_configurations(angles):
+def compute_link_configurations(angles, return_end_point=False):
     joint1_quat = Quaternion(axis=[0, 0, 1], angle=angles[0])
     joint2_quat = Quaternion(axis=[0, 1, 0], angle=angles[1])
     joint3_quat = Quaternion(axis=[0, 1, 0], angle=angles[2])
@@ -48,6 +50,7 @@ def compute_link_configurations(angles):
     link3_center_wrt_world = link3_quat.rotate(link3_center_wrt_l2) + link2_end_wrt_world
     end_point_wrt_world = link3_quat.rotate(end_point_wrl_l2) + link2_end_wrt_world
 
+    
     link_positions = [
         link1_center_wrt_world,
         link2_center_wrt_world,
@@ -59,6 +62,8 @@ def compute_link_configurations(angles):
         link2_quat,
         link3_quat
     ]
+
+    if return_end_point:  return link_positions, link_quats, end_point_wrt_world
 
     return link_positions, link_quats
 
@@ -98,7 +103,7 @@ def compute_vehicle_distance(config1, config2):
 def read_configs_file(file_path):
     loaded_configs = []
 
-    with open(file_path, 'r') as file:
+    with open("/common/home/st1122/Projects/cs560/assignment_2/" + file_path, 'r') as file:
         for line in file:
             line = line.split('#')[0]
             line = line.strip()
@@ -110,7 +115,7 @@ def read_configs_file(file_path):
     return np.array(loaded_configs)
 
 
-def a_star(start_node: GraphNode, goal_node: GraphNode):
+def a_star(start_node: GraphNode, goal_node: GraphNode, return_cost=False):
     fringe = PriorityQueue()
     visited = {start_node}
 
@@ -127,6 +132,8 @@ def a_star(start_node: GraphNode, goal_node: GraphNode):
         current_heuristic, _, current_node, current_cost, current_path = fringe.get()
 
         if current_node == goal_node:
+            if return_cost:
+                return current_path, current_cost
             return current_path
 
         for next_node in current_node.adjacent:
@@ -145,4 +152,10 @@ def a_star(start_node: GraphNode, goal_node: GraphNode):
 
     return None
 
+def parallel_run(func, arg_list, show_progress=False):
+    results = []
+    with Pool(min(cpu_count(), len(arg_list))) as p:
+        for result in tqdm(p.imap_unordered(func, arg_list), total=len(arg_list)):
+            results.append(result)
+    return results
 

@@ -18,13 +18,19 @@ from matplotlib.animation import FuncAnimation
 from utils.visualization_utils import visualize_car_trajectory, visualize_obstacles
 from visualizer.visualization.threejs_group import *
 
-MAXIMUM_PROP_COUNT = 1e3
-PROP_STEPS = 5
+MAXIMUM_PROP_COUNT = 1e4
+MAX_PROP_STEPS = 10
+MIN_PROP_STEPS = 1
 
-GOAL_POS_DIST = 0.1
+GOAL_POS_DIST = 1
 GOAL_ANGLE_DIST = 0.5
 GOAL_BIAS_PROB = 0.5
+
 MAX_VEL = 2
+MIN_VEL = -1
+
+MIN_STEERING = -np.pi/3
+MAX_STEERING = np.pi/3
 
 class RRT:
     visualization_directory = 'rrt'
@@ -46,12 +52,14 @@ class RRT:
         return np.linalg.norm(config[:2] - self.goal[:2]) < GOAL_POS_DIST and np.abs(angular_diff(config[2], self.goal[2])) < GOAL_ANGLE_DIST
 
     def propagate(self, random_node):
-        u0 = np.random.rand() * MAX_VEL
-        u1 = np.random.uniform(-1, 1)
+        u0 = np.random.uniform(MIN_VEL, MAX_VEL)
+        u1 = np.random.uniform(MIN_STEERING, MAX_STEERING)
 
         u = np.array([u0, u1])
 
-        traj = forward_prop(u, random_node.config.copy(), PROP_STEPS)
+        prop_steps = random.randint(MIN_PROP_STEPS, MAX_PROP_STEPS)
+
+        traj = forward_prop(u, random_node.config.copy(), prop_steps)
 
         if is_car_colliding(traj[-1], self.obstacle_map):
             return None, None, None
@@ -62,11 +70,11 @@ class RRT:
         min_dist = np.inf
         goal_node = None
         while len(self.tree) < MAXIMUM_PROP_COUNT:
-            if np.random.rand() < GOAL_BIAS_PROB:
+            if np.random.uniform(0, 1) < GOAL_BIAS_PROB:
                 random_config = self.goal
             else:
-                random_pos = (np.random.rand(2) * 100) - 50
-                random_angle = np.random.rand() * 2 * np.pi - np.pi
+                random_pos = np.random.uniform(-50, 50, size=2)
+                random_angle = np.random.uniform(-np.pi, np.pi)
                 random_config = np.array([random_pos[0], random_pos[1], random_angle])
 
             min_random_dist = np.inf
@@ -120,6 +128,7 @@ class RRT:
         return self.path
 
     def visualize_rrt(self):
+        print('Generating Animation...')
         fig, ax = plt.subplots()
         ax.set_xlim(-50, 50)
         ax.set_ylim(-50, 50)
@@ -148,7 +157,7 @@ class RRT:
 
         anim = FuncAnimation(fig, update, frames=len(self.tree) + 1, interval=30, blit=True)
 
-        print('Generated Animation...')
+        print('Saving Animation...')
         file_name = './visualizer/out/rrt/tree.'
 
         anim.save(file_name + 'mp4', writer='ffmpeg')
