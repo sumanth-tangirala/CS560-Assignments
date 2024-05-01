@@ -32,7 +32,7 @@ VEHICLE_INTERPOLATION_DIST = 1.9
 # Visualization Params
 VEHICLE_INTERPOLATION_TIME = 0.5  # seconds
 ARM_INTERPOLATION_TIME = 1  # seconds
-TIMESTEP = 0.05  # seconds
+TIMESTEP = 0.5  # seconds
 
 # Car Like Params
 CAR_DIMS = [2, 1, 1]

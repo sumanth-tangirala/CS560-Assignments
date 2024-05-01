@@ -205,14 +205,15 @@ def visualize_arm_trajectory(trajectory, viz_out):
 def visualize_path(path: List[GraphNode], is_arm, viz_out):
     trajectory = []
 
-    num_interpolations = ceil(ARM_INTERPOLATION_TIME / TIMESTEP) if is_arm else None
+    num_interpolations = ceil(
+        ARM_INTERPOLATION_TIME / TIMESTEP) if is_arm else None
 
     for i in range(len(path) - 1):
-        interpolated_configs = path[i].interpolate_configs(path[i+1], num_interpolations)
+        interpolated_configs = path[i].interpolate_configs(
+            path[i+1], num_interpolations)
         trajectory.extend(interpolated_configs)
 
     trajectory = np.array(trajectory)
-
 
     if is_arm:
         visualize_arm_trajectory(trajectory, viz_out)
@@ -234,7 +235,6 @@ def visualize_car_trajectory(path: List[np.ndarray], viz_out):
         path_line.append(pos_config)
 
     trajectory = np.array(trajectory)
-
 
     car = box_geom(
         name="car",
@@ -260,6 +260,7 @@ def visualize_car_trajectory(path: List[np.ndarray], viz_out):
         ])
         idx += 1
 
+    breakpoint()
+
     viz_out.add_animation(car, animation_trajectory)
     viz_out.add_line(path_line, grey)
-
